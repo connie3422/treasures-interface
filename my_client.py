@@ -6,14 +6,48 @@ import sys
 
 class TreasureClient:
     def __init__(self, url=None, pid=None, name=None, gid=None):
-        self.api = TreasureApi(url=args.url, pid=args.pid, name=args.name)
-        if hasattr(self.api, 'error'):
-            print self.api.error['error'] + ": the player probably already exists"
-        elif gid and gid in api.player['games_playing']:
+        self.name = name
+        self.pid = pid
+        self.url = url
+        self.gid = gid
+        self.__init_api()
+        if gid and gid in api.player['games_playing']:
             self.api.get_game(gid=gid)
         else:
             self.select_game()
 
+    def __init_api(self):
+        print "init", args
+        while True:
+            try:
+                # print "self", self.pid
+                # print "self", self.name
+                self.api = TreasureApi(url=self.url, pid=self.pid, name=self.name)
+                if hasattr(self.api, 'error'):
+                    print self.api.error['error'] + ": the player probably already exists"
+                    self.setup_player()
+                else:
+                    # print("here")
+                    break
+            except ValueError:
+                self.setup_player()
+                    
+    def setup_player(self):
+        print("Do you have a player?")
+        self.prompt_choices([
+            ('n', 'new player', self.create_new_player),
+            ('e', 'existing player', self.get_pid),
+            ('q', 'quit playing', sys.exit)
+        ]);
+    
+    def create_new_player(self):
+        print("What is your player's name? ")
+        self.name = raw_input()
+    
+    def get_pid(self):
+        print("What is your existing player's PID? ")
+        self.pid = raw_input()
+    
     def select_game(self):
         print("How would you like to join a game?")
         while not self.prompt_choices([
@@ -39,7 +73,8 @@ class TreasureClient:
         print("Waiting for another player to join.")
         return self.prompt_choices([
             ('w', 'keep waiting', self.wait_for_game_to_start),
-            ('o', 'choose another game', self.select_game)
+            ('o', 'choose another game', self.select_game),
+            ('q', 'quit playing', sys.exit)
         ])
 
     def join_game(self):
@@ -87,13 +122,24 @@ class TreasureClient:
         for key, message, action in choices:
             print("  [{}] {}".format(key, message))
         choice = None
-        while choice != "q":
+        while True:
             choice = raw_input('> ')
+            print choice
             for key, message, action in choices:
                 if choice == key: 
                     # print key, message, action
+                    # print "action", action
                     return action()
 
+def enterGame(args):
+    # while(true):
+    url = args.url
+    pid = args.pid
+    name = args.name
+    gid = args.gid
+    # print "url, pid, name, gid ", url, pid, name, gid 
+
+    client = TreasureClient(url=url, pid=pid, name=name, gid=gid)
 
 if __name__ == '__main__':
     parser = ArgumentParser(description='Play treasure')
@@ -102,5 +148,5 @@ if __name__ == '__main__':
     parser.add_argument('--name', help="player name, if creating a new player")
     parser.add_argument('--gid', help="game id, if already existing")
     args = parser.parse_args()
-    client = TreasureClient(url=args.url, pid=args.pid, name=args.name, gid=args.gid)
+    enterGame(args)
 
